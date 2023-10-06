@@ -1,0 +1,38 @@
+# Common
+key.json
+
+# Packer
+variables.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*.backup
+*.tfstate.backup
+*.tfvars
+config.tf
+provider.tf
+
+# Ansible
+jdauphant.nginx
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Vagrant & molecule
+.vagrant/
+*.log
+*.pyc
+.molecule
+.cache
+.pytest_cache
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json

@@ -1,0 +1,16 @@
+---
+- name: Image to docker
+  hosts: _reddit_docker
+  become: true
+
+  tasks:
+  - name: Start a container
+    docker_container:
+      name: otus-reddit
+      image: shrkga/otus-reddit:1.0
+      pull: yes
+      state: started
+      restart_policy: on-failure
+      ports:
+      - "9292:9292"
+      container_default_behavior: no_defaults
