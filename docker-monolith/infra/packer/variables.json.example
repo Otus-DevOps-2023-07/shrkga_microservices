@@ -1,0 +1,7 @@
+{
+    "folder_id": "xxxxxxxxxxxxxxxxxxxx",
+    "source_image_family": "ubuntu-1804-lts",
+    "service_account_key_file": "../key.json.example",
+    "disk_size_gb": "10",
+    "tag": "docker"
+}
