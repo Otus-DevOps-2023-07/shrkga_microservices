@@ -23,5 +23,5 @@ module "docker" {
   private_key_path  = var.private_key_path
   docker_disk_image = var.docker_disk_image
   subnet_id         = var.subnet_id
-  docker_count      = 2
+  docker_count      = 1
 }
