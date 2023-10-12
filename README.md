@@ -95,8 +95,6 @@ shrkga/post      1.0       658e947326f0   16 hours ago   67.2MB
 - После перезапуска контейнеров написанный пост остался на месте;
 - Финальный набор команд такой:
 ```
-docker rm -f $(docker ps -aq)
-
 docker build -t shrkga/post:1.0 ./post-py
 docker build -t shrkga/comment:2.0 ./comment
 docker build -t shrkga/ui:3.0 ./ui
