@@ -60,7 +60,7 @@ docker run -d --network=reddit -p 9292:9292 \
 FROM alpine:3.14
 
 WORKDIR /app
-COPY Gemfile* .
+COPY Gemfile* ./
 
 RUN set -x \
  && apk --no-cache --update add ruby-full ruby-dev build-base \
@@ -68,7 +68,7 @@ RUN set -x \
  && bundle install \
  && apk del ruby-dev build-base
 
-COPY . .
+COPY . ./
 ENV POST_SERVICE_HOST=post POST_SERVICE_PORT=5000 COMMENT_SERVICE_HOST=comment COMMENT_SERVICE_PORT=9292
 
 CMD ["puma"]
@@ -80,7 +80,7 @@ CMD ["puma"]
 FROM alpine:3.14
 
 WORKDIR /app
-COPY Gemfile* .
+COPY Gemfile* ./
 
 RUN set -x \
  && apk --no-cache --update add ruby-full ruby-dev build-base \
@@ -88,7 +88,7 @@ RUN set -x \
  && bundle install \
  && apk del ruby-dev build-base
 
-COPY . .
+COPY . ./
 ENV COMMENT_DATABASE_HOST=comment_db COMMENT_DATABASE=comments
 
 CMD ["puma"]

@@ -3,7 +3,7 @@
 FROM alpine:3.14
 
 WORKDIR /app
-COPY Gemfile* .
+COPY Gemfile* ./
 
 RUN set -x \
  && apk --no-cache --update add ruby-full ruby-dev build-base \
@@ -11,7 +11,7 @@ RUN set -x \
  && bundle install \
  && apk del ruby-dev build-base
 
-COPY . .
+COPY . ./
 ENV COMMENT_DATABASE_HOST=comment_db COMMENT_DATABASE=comments
 
 CMD ["puma"]

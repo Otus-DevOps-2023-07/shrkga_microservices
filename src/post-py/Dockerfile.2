@@ -3,7 +3,7 @@
 FROM alpine:3.9
 
 WORKDIR /app
-COPY . .
+COPY . ./
 
 RUN set -x \
  && apk --no-cache --update add python3 py3-pip python3-dev build-base \

@@ -3,7 +3,7 @@
 FROM python:3.6-alpine
 
 WORKDIR /app
-COPY . .
+COPY . ./
 
 RUN set -x \
  && apk --no-cache --update add build-base \
