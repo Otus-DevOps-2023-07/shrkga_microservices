@@ -1,6 +1,9 @@
 # Common
 key.json
 
+# Docker
+.env
+
 # Packer
 variables.json
 
