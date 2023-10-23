@@ -1,6 +1,24 @@
 # Репозиторий shrkga_microservices
 Описание выполненных домашних заданий.
 
+
+
+```
+$ docker-machine create --driver generic --generic-ip-address=158.160.125.154 --generic-ssh-user ubuntu --generic-ssh-key ~/.ssh/yc docker-host
+
+$ docker-machine ls
+
+NAME          ACTIVE   DRIVER    STATE     URL                          SWARM   DOCKER    ERRORS
+docker-host   -        generic   Running   tcp://158.160.125.154:2376           v24.0.6
+
+$ eval $(docker-machine env docker-host)
+
+```
+
+
+
+
+
 ## ДЗ #15. Сетевое взаимодействие Docker контейнеров. Docker Compose. Тестирование образов
 
 Выполнены все основные и дополнительные пункты ДЗ
