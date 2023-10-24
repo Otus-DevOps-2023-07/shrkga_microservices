@@ -16,6 +16,8 @@ before_script:
 
 build_job:
   stage: build
+  services:
+    - docker:latest
   script:
     - echo 'Building'
     - docker build -t reddit:$CI_ENVIRONMENT_SLUG docker-monolith/
