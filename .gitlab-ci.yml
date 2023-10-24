@@ -14,11 +14,16 @@ build_job:
   stage: build
   image: docker:latest
   environment:
-    name: branch/$CI_COMMIT_REF_NAME
+    name: branch/${CI_COMMIT_REF_NAME}
+  variables:
+    NAME: reddit-${CI_ENVIRONMENT_SLUG}
+    IMG: reddit:${CI_ENVIRONMENT_SLUG}
   script:
     - echo 'Building'
-    - docker build -t reddit:$CI_ENVIRONMENT_SLUG docker-monolith/
-    - docker run --name reddit -d --network=host reddit:$CI_ENVIRONMENT_SLUG
+    - docker rm -f $NAME
+    - docker build -t $IMG docker-monolith/
+    - docker run --name $NAME --publish ${CI_PIPELINE_ID}:9292 --detach $IMG
+    - env
 
 test_unit_job:
   stage: test
@@ -48,7 +53,7 @@ branch review:
   script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
   environment:
     name: branch/$CI_COMMIT_REF_NAME
-    url: http://$CI_ENVIRONMENT_SLUG.example.com
+    url: http://$CI_ENVIRONMENT_SLUG.example.com:${CI_PIPELINE_ID}
   only:
     - branches
   except:
