@@ -7,16 +7,22 @@ stages:
   - stage
   - production
 
+variables:
+  DATABASE_URL: 'mongodb://mongo/user_posts'
+
+before_script:
+  - cd reddit
+  - bundle install
+
 build_job:
   stage: build
   script:
     - echo 'Building'
+    - docker build -t reddit:$CI_ENVIRONMENT_SLUG docker-monolith/
+    - docker run --name reddit -d --network=host reddit:$CI_ENVIRONMENT_SLUG
 
 test_unit_job:
   stage: test
-  before_script:
-    - cd reddit
-    - bundle install
   services:
     - mongo:latest
   script:
@@ -35,7 +41,7 @@ deploy_dev_job:
     name: dev
     url: http://dev.example.com
 
-branch_review:
+branch review:
   stage: review
   script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
   environment:
