@@ -13,8 +13,8 @@ module "docker" {
   subnet_id        = var.subnet_id
   instances_count  = 1
   cores            = 4
-  memory           = 4
-  core_fraction    = 20
+  memory           = 8
+  core_fraction    = 50
   disk_size        = 50
   preemptible      = true
 }

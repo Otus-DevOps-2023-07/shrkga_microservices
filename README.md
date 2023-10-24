@@ -15,9 +15,70 @@ $ eval $(docker-machine env docker-host)
 
 ```
 
+```
+$ cd gitlab-ci/infra/terraform/
+$ terraform apply -auto-approve=true
 
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+  ...
 
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 
+Outputs:
+
+external_ip_address_docker = [
+  "51.250.7.91",
+]
+```
+
+```
+$ cd ../ansible/
+$ ansible-playbook playbooks/site.yml
+
+PLAY [Install Docker] *****************************************************************
+
+TASK [Gathering Facts] ****************************************************************
+ok: [51.250.7.91]
+
+TASK [Add Docker GPG apt Key] *********************************************************
+changed: [51.250.7.91]
+
+TASK [Add Docker Repository] **********************************************************
+changed: [51.250.7.91]
+
+TASK [Update apt and install packages] ************************************************
+changed: [51.250.7.91]
+
+TASK [Install Docker Module for Python] ***********************************************
+changed: [51.250.7.91]
+
+PLAY [Install GitLab CE] **************************************************************
+
+TASK [Gathering Facts] ****************************************************************
+ok: [51.250.7.91]
+
+TASK [Create gitlab-ce container] *****************************************************
+changed: [51.250.7.91]
+
+PLAY [Install GitLab Runner] **********************************************************
+
+TASK [Gathering Facts] ****************************************************************
+ok: [51.250.7.91]
+
+TASK [Create gitlab-runner container] *************************************************
+changed: [51.250.7.91]
+
+PLAY RECAP ****************************************************************************
+51.250.7.91 : ok=9  changed=6  unreachable=0  failed=0  skipped=0  rescued=0  ignored=0
+```
+
+```
+$ ssh ubuntu@51.250.7.91 sudo docker ps -a
+CONTAINER ID   IMAGE                         COMMAND                  CREATED         STATUS                   PORTS                                                            NAMES
+07eca80677fb   gitlab/gitlab-runner:latest   "/usr/bin/dumb-init …"   5 minutes ago   Up 5 minutes                                                                              gitlab-runner
+6ee1bedadbce   gitlab/gitlab-ce:latest       "/assets/wrapper"        5 minutes ago   Up 5 minutes (healthy)   0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:2222->22/tcp   gitlab-ce
+```
 
 ## ДЗ #15. Сетевое взаимодействие Docker контейнеров. Docker Compose. Тестирование образов
 
