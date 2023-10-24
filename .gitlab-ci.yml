@@ -47,10 +47,12 @@ deploy_dev_job:
 branch review:
   stage: review
   image: docker:latest
-  script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
+  script:
+    - REDDIT_PORT=$(docker port reddit-${CI_ENVIRONMENT_SLUG} 9292/tcp | head -n 1 | awk -F ':' '{print $2}')
+    - echo "Deploy to $CI_ENVIRONMENT_SLUG at port ${REDDIT_PORT}"
   environment:
     name: branch/$CI_COMMIT_REF_NAME
-    url: http://${CI_SERVER_HOST}:$(docker port reddit-${CI_ENVIRONMENT_SLUG} 9292/tcp | head -n 1 | awk -F ':' '{print $2}')
+    url: http://${CI_SERVER_HOST}:${REDDIT_PORT}
   only:
     - branches
   except:
