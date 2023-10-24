@@ -48,7 +48,7 @@ branch review:
   stage: review
   image: docker:latest
   script:
-    - REDDIT_PORT=$(docker port reddit-${CI_ENVIRONMENT_SLUG} 9292/tcp | head -n 1 | awk -F ':' '{print $2}')
+    - export REDDIT_PORT=$(docker port reddit-${CI_ENVIRONMENT_SLUG} 9292/tcp | head -n 1 | awk -F ':' '{print $2}')
     - echo "Deploy to $CI_ENVIRONMENT_SLUG at port ${REDDIT_PORT}"
   environment:
     name: branch/$CI_COMMIT_REF_NAME
