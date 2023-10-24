@@ -20,6 +20,8 @@ build_job:
     - docker rm -f reddit-${CI_ENVIRONMENT_SLUG}
     - docker build -t reddit:${CI_ENVIRONMENT_SLUG} docker-monolith/
     - docker run --name reddit-${CI_ENVIRONMENT_SLUG} --publish-all --detach reddit:${CI_ENVIRONMENT_SLUG}
+    - REDDIT_PORT=$(docker port reddit-${CI_ENVIRONMENT_SLUG} 9292/tcp | head -n 1 | awk -F ':' '{print $2}')
+    - echo "Application URL -- http://${CI_SERVER_HOST}:${REDDIT_PORT}/"
 
 test_unit_job:
   stage: test
@@ -47,13 +49,10 @@ deploy_dev_job:
 branch review:
   stage: review
   image: docker:latest
-  before_script:
-    - export REDDIT_PORT=$(docker port reddit-${CI_ENVIRONMENT_SLUG} 9292/tcp | head -n 1 | awk -F ':' '{print $2}')
-  script:
-    - echo "Deploy to $CI_ENVIRONMENT_SLUG at port ${REDDIT_PORT}"
+  script: echo "Deploy to $CI_ENVIRONMENT_SLUG"
   environment:
     name: branch/$CI_COMMIT_REF_NAME
-    url: http://${CI_SERVER_HOST}:${REDDIT_PORT}
+    url: http://${CI_SERVER_HOST}/${CI_ENVIRONMENT_SLUG}/
   only:
     - branches
   except:
