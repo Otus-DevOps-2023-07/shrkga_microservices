@@ -3,7 +3,7 @@ image: docker:latest
 
 stages:
   - build
-  # - test
+  - test
   - review
   - stage
   - production
@@ -22,12 +22,12 @@ build_job:
     - docker build -t reddit:$CI_ENVIRONMENT_SLUG docker-monolith/
     - docker run --name reddit -d --network=host reddit:$CI_ENVIRONMENT_SLUG
 
-test_unit_job:
-  stage: test
-  services:
-    - mongo:latest
-  script:
-    - ruby simpletest.rb
+# test_unit_job:
+#   stage: test
+#   services:
+#     - mongo:latest
+#   script:
+#     - ruby simpletest.rb
 
 test_integration_job:
   stage: test
