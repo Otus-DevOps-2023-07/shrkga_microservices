@@ -17,8 +17,8 @@ build_job:
     name: branch/${CI_COMMIT_REF_NAME}
   script:
     - echo 'Building'
-    - docker rm -f reddit-${CI_ENVIRONMENT_SLUG}
     - docker build -t reddit:${CI_ENVIRONMENT_SLUG} docker-monolith/
+    - docker rm -f reddit-${CI_ENVIRONMENT_SLUG}
     - docker run --name reddit-${CI_ENVIRONMENT_SLUG} --publish-all --detach reddit:${CI_ENVIRONMENT_SLUG}
     - REDDIT_PORT=$(docker port reddit-${CI_ENVIRONMENT_SLUG} 9292/tcp | head -n 1 | awk -F ':' '{print $2}')
     - echo "Application URL -- http://${CI_SERVER_HOST}:${REDDIT_PORT}/"
