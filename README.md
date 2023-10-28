@@ -1,6 +1,123 @@
 # Репозиторий shrkga_microservices
 Описание выполненных домашних заданий.
 
+## ДЗ #16. Устройство Gitlab CI. Построение процесса непрерывной интеграции
+
+Выполнены все основные и дополнительные пункты ДЗ
+
+#### Основное задание
+- Облачная инфраструктура описана с использованием подхода IaC;
+- В папке `gitlab-ci/infra/terraform` подготовлена конфигурация Terraform для развертывания ВМ в YC;
+- В папке `gitlab-ci/infra/ansible` подготовлена конфигурация Ansible для установки на ВМ `Docker`, `GitLab CE` и `GitLab Runner`:
+  - `playbooks/docker.yml` -- плейбук для установки докера;
+  - `playbooks/gitlab-ce.yml` -- плейбук для omnibus-установки гитлаба;
+  - `playbooks/gitlab-runner.yml` -- пелйбук для установки гитлаб раннера;
+  - `playbooks/site.yml` -- плейбук для установки всех вышеперечисленных компонентов;
+- В файле `gitlab-ci/docker-compose.yml` описана установка gitlab-ce через `docker compose`;
+- Запуск через `docker compose up -d` отработал успешно, GitLab поднялся по адресу http://yc-vm-ip/;
+
+#### Задание со ⭐. Автоматизация развёртывания GitLab
+- Выполнена автоматизация развёртывания GitLab с помощью модуля Ansible `docker_container` (см. плейбук `gitlab-ci/infra/ansible/playbooks/gitlab-ce.yml`);
+
+#### Проект в GitLab
+- В GitLab созданы группа `homework` и проект `example`;
+- В файле `.gitlab-ci.yml` описан CI/CD Pipeline;
+- Установлен и зарегистрирован GitLab Runner;
+- Пайплайн успешно отработал;
+- Тесты в пайплайне изменены в соответствии с ДЗ;
+- Определены окружения `dev`, `beta` и `production`;
+- Определены окружения `stage` и `production` для выкатывания кода с явно зафиксированной версией (помеченного с помощью тэга в git);
+- Добавлены динамические окружения для каждой ветки в репозитории, кроме ветки master;
+
+#### Задание со ⭐. Запуск reddit в контейнере
+- В этап пайплайна `build` добавлен запуск контейнера с приложением `reddit`;
+- Контейнер с reddit деплоится на окружение, динамически создаваемое для каждой ветки в GitLab;
+
+```
+build_job:
+  stage: build
+  image: docker:latest
+  environment:
+    name: branch/${CI_COMMIT_REF_NAME}
+  script:
+    - echo 'Building'
+    - docker build -t reddit:${CI_ENVIRONMENT_SLUG} docker-monolith/
+    - docker rm -f reddit-${CI_ENVIRONMENT_SLUG}
+    - docker run --name reddit-${CI_ENVIRONMENT_SLUG} --publish-all --detach reddit:${CI_ENVIRONMENT_SLUG}
+    - REDDIT_PORT=$(docker port reddit-${CI_ENVIRONMENT_SLUG} 9292/tcp | head -n 1 | awk -F ':' '{print $2}')
+    - echo "Application URL -- http://${CI_SERVER_HOST}:${REDDIT_PORT}/"
+```
+
+#### Задание со ⭐. Автоматизация развёртывания GitLab Runner
+- Выполнена автоматизация развёртывания GitLab Runner с помощью модуля Ansible `docker_container` (см. плейбук `gitlab-ci/infra/ansible/playbooks/gitlab-runner.yml`);
+
+### Выполнение команд `terraform` и `ansible`
+
+```
+$ cd gitlab-ci/infra/terraform/
+$ terraform apply -auto-approve=true
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+  ...
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+external_ip_address_docker = [
+  "51.250.7.91",
+]
+```
+
+```
+$ cd ../ansible/
+$ ansible-playbook playbooks/site.yml
+
+PLAY [Install Docker] *****************************************************************
+
+TASK [Gathering Facts] ****************************************************************
+ok: [51.250.7.91]
+
+TASK [Add Docker GPG apt Key] *********************************************************
+changed: [51.250.7.91]
+
+TASK [Add Docker Repository] **********************************************************
+changed: [51.250.7.91]
+
+TASK [Update apt and install packages] ************************************************
+changed: [51.250.7.91]
+
+TASK [Install Docker Module for Python] ***********************************************
+changed: [51.250.7.91]
+
+PLAY [Install GitLab CE] **************************************************************
+
+TASK [Gathering Facts] ****************************************************************
+ok: [51.250.7.91]
+
+TASK [Create gitlab-ce container] *****************************************************
+changed: [51.250.7.91]
+
+PLAY [Install GitLab Runner] **********************************************************
+
+TASK [Gathering Facts] ****************************************************************
+ok: [51.250.7.91]
+
+TASK [Create gitlab-runner container] *************************************************
+changed: [51.250.7.91]
+
+PLAY RECAP ****************************************************************************
+51.250.7.91 : ok=9  changed=6  unreachable=0  failed=0  skipped=0  rescued=0  ignored=0
+```
+
+```
+$ ssh ubuntu@51.250.7.91 sudo docker ps -a
+CONTAINER ID   IMAGE                         COMMAND                  CREATED         STATUS                   PORTS                                                            NAMES
+07eca80677fb   gitlab/gitlab-runner:latest   "/usr/bin/dumb-init …"   5 minutes ago   Up 5 minutes                                                                              gitlab-runner
+6ee1bedadbce   gitlab/gitlab-ce:latest       "/assets/wrapper"        5 minutes ago   Up 5 minutes (healthy)   0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:2222->22/tcp   gitlab-ce
+```
+
 ## ДЗ #15. Сетевое взаимодействие Docker контейнеров. Docker Compose. Тестирование образов
 
 Выполнены все основные и дополнительные пункты ДЗ

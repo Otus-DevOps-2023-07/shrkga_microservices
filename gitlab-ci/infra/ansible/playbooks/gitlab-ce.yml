@@ -1,0 +1,26 @@
+---
+- name: Install GitLab CE
+  hosts: _docker
+  become: true
+
+  tasks:
+  - name: Create gitlab-ce container
+    docker_container:
+      container_default_behavior: no_defaults
+      name: gitlab-ce
+      image: gitlab/gitlab-ce:latest
+      hostname: gitlab-ce
+      pull: yes
+      state: started
+      restart_policy: always
+      env:
+        GITLAB_OMNIBUS_CONFIG: |
+          external_url 'http://{{ ansible_host }}'
+      ports:
+        - '80:80'
+        - '443:443'
+        - '2222:22'
+      volumes:
+        - '/srv/gitlab/config/:/etc/gitlab/'
+        - '/srv/gitlab/logs/:/var/log/gitlab/'
+        - '/srv/gitlab/data/:/var/opt/gitlab/'
