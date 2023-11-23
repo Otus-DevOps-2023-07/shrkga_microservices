@@ -1,6 +1,143 @@
 # Репозиторий shrkga_microservices
 Описание выполненных домашних заданий.
 
+## ДЗ #17. Введение в мониторинг. Модели и принципы работы систем мониторинга
+
+Выполнены все основные и дополнительные пункты ДЗ
+
+#### Основное задание
+- Создан Docker хост в Yandex Cloud, локальное окружение настроено на работу с ним;
+- Prometheus запущен из образа `prom/prometheus`;
+- Изучены метрики по умолчанию;
+- Изучен раздел Targets (цели) и формат собираемых метрик, доступных по адресу `host:port/metrics`;
+- Создан кастомный Docker образ Prometheus на основе собственного файла конфигурации `prometheus.yml`;
+- Создан `docker-compose.yml` файл для поднятия Prometheus совместно с микросервисами `ui`, `post`, `comment`, `mongo_db`;
+- Изучен функционал Prometheus на основе новых целей и Endpoint'ов наших микросервисов;
+- Добавлен сбор метрик Docker хоста при помощи Node exporter:
+  - Добавлен новый сервис в `docker-compose.yml`;
+  - Добавлен новый Job в `prometheus.yml`;
+- Изучено изменение отображения динамики нагрузки хоста на графике при повышении загруженности CPU
+
+#### Собранные образы запушены на DockerHub
+https://hub.docker.com/u/shrkga
+
+#### Задание со ⭐. Мониторинг MongoDB в Prometheus
+- В Prometheus добавлен мониторинг MongoDB с использованием экспортера `percona/mongodb_exporter`;
+```
+$ cat docker/docker-compose.yml
+...
+  mongodb_exporter:
+    image: percona/mongodb_exporter:0.40
+    command:
+      - '--mongodb.uri=mongodb://mongo_db:27017'
+      - '--compatible-mode'
+      - '--mongodb.direct-connect=true'
+    # ports:
+    #   - 9216:9216/tcp
+    networks:
+      - back_net
+      - front_net
+    depends_on:
+      - mongo_db
+...
+```
+```
+$ cat monitoring/prometheus/prometheus.yml
+...
+  - job_name: 'mongodb'
+    static_configs:
+    - targets:
+      - 'mongodb_exporter:9216'
+...
+```
+
+#### Задание со ⭐. Мониторинг сервисов comment, post, ui в Prometheus с помощью Blackbox exporter
+- В Prometheus добавлен мониторинг сервисов comment, post, ui с использованием экспортера `prom/blackbox-exporter`;
+- Собран и запушен на DockerHub кастомный образ с измененным файлом конфигурации `config.yml`;
+```
+$ cat monitoring/blackbox/Dockerfile
+
+FROM prom/blackbox-exporter:latest
+ADD config.yml /etc/blackbox_exporter/
+```
+```
+$ cat monitoring/blackbox/config.yml
+
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: []
+      method: GET
+      follow_redirects: false
+```
+```
+$ cat docker/docker-compose.yml
+...
+  blackbox-exporter:
+    image: ${USERNAME}/blackbox-exporter
+    # ports:
+    #   - 9115:9115/tcp
+    networks:
+      - front_net
+    depends_on:
+      - ui
+      - post
+      - comment
+...
+```
+```
+$ cat monitoring/prometheus/prometheus.yml
+...
+  - job_name: 'blackbox'
+    metrics_path: /metrics
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://ui:9292
+        - http://comment:9292
+        - http://post:9292
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+...
+```
+
+Итоговый список целей выглядит так:
+
+![Prometheus Targets](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/blob/monitoring-1/monitoring/img/prom.png?raw=true)
+
+#### Задание со ⭐. Автоматизация при помощи `Makefile`
+- Реализованы сценарии билда и пуша в DockerHub любого, или всех сразу, образов;
+- Автоматическая генерация справки при запуске `make help`, либо просто `make` без аргументов.
+```
+$ cd monitoring/
+$ make help
+
+build-all        Build all images
+build-blackbox   Build Blackbox exporter image
+build-comment    Build Comment image
+build-post       Build Post image
+build-prometheus Build Prometheus exporter image
+build-ui         Build UI image
+help             Display this help screen
+push-all         Push all images to Docker Hub
+push-blackbox    Push Blackbox exporter image to Docker Hub
+push-comment     Push Comment image to Docker Hub
+push-post        Push Post image to Docker Hub
+push-prometheus  Push Prometheus image to Docker Hub
+push-ui          Push UI image to Docker Hub
+```
+> **[Makefile здесь](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/blob/monitoring-1/monitoring/Makefile)**
+
+
 ## ДЗ #16. Устройство Gitlab CI. Построение процесса непрерывной интеграции
 
 Выполнены все основные и дополнительные пункты ДЗ
