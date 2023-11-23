@@ -19,7 +19,7 @@
 - Изучено изменение отображения динамики нагрузки хоста на графике при повышении загруженности CPU
 
 #### Собранные образы запушены на DockerHub
-https://hub.docker.com/u/shrkga
+> https://hub.docker.com/u/shrkga
 
 #### Задание со ⭐. Мониторинг MongoDB в Prometheus
 - В Prometheus добавлен мониторинг MongoDB с использованием экспортера `percona/mongodb_exporter`;
