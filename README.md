@@ -23,6 +23,7 @@
 ```
 $ cat logging/fluentd/fluent.conf
 
+...
 <filter service.ui>
   @type parser
   <parse>
@@ -34,6 +35,7 @@ $ cat logging/fluentd/fluent.conf
   key_name message
   # reserve_data true
 </filter>
+...
 ```
 
 #### Распределенный трейсинг
@@ -62,7 +64,6 @@ $ cat src-bugged/post-py/post_app.py
         return dumps(post)
 ...
 ```
-
 
 ## ДЗ #17. Введение в мониторинг. Модели и принципы работы систем мониторинга
 
