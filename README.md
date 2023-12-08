@@ -18,8 +18,8 @@ kubectl apply -f calico.yaml
 - Кластер работает, с помощью команды `kubectl apply -f manifest.yaml` задеплоены поды приложений `comment`, `mongo`, `post`, `ui`;
 
 #### Задание со ⭐. Установка кластера k8s с помощью terraform и ansible
-- В папке `kubernetes/terraform` подготовлена конфигурация Terraform для развертывания двух ВМ для master и worker нод кластера Kubernetes;
-- В папке `kubernetes/ansible` подготовлена конфигурация Ansible для развертывания кластера k8s;
+- В папке `kubernetes/terraform` подготовлена конфигурация Terraform для развертывания произвольного количества инстансов master и worker нод кластера Kubernetes;
+- В папке `kubernetes/ansible` подготовлена конфигурация Ansible для развертывания кластера k8s с автоматическим назначением нодам master и worker ролей;
 - Для предварительной конфигурации хостов написаны (скопипащены) таски отключения свопа, конфигурации параметров `sysctl` для k8s, загрузки модуля ядра `br_netfilter`, настройки `iptables`;
 - В плейбуке используются роли Ansible `geerlingguy.containerd` и `geerlingguy.kubernetes`, установленные из Ansible-galaxy;
 - Для сети настраивается плагин `Calico`;
