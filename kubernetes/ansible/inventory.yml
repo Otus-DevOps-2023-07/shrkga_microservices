@@ -1,0 +1,23 @@
+---
+all:
+  vars:
+    ansible_user: ubuntu
+    private_key_file: ~/.ssh/yc
+    kubernetes_version: 1.28
+
+  children:
+    masters:
+      hosts:
+        51.250.70.117:
+      vars:
+        kubernetes_role: control_plane
+        kubernetes_apiserver_advertise_address: 0.0.0.0
+        kubernetes_ignore_preflight_errors: Mem
+        kubernetes_pod_network:
+          cni: calico
+          cidr: 10.244.0.0/16
+    workers:
+      hosts:
+        84.201.134.106:
+      vars:
+        kubernetes_role: node
