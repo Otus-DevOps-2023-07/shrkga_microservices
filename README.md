@@ -1,6 +1,59 @@
 # Репозиторий shrkga_microservices
 Описание выполненных домашних заданий.
 
+## ДЗ #19. Введение в Kubernetes
+
+Выполнены все основные и дополнительные пункты ДЗ.
+
+#### Основное задание
+- Описаны Deployment манифесты приложений `comment`, `mongo`, `post`, `ui`;
+- В YC развернуты две ВМ для master и worker нод кластера Kubernetes;
+- С помощью команд `kubeadm init` и `kubeadm join` развернут кластер k8s;
+- Установлен сетевой плагин `Calico`;
+```
+wget https://projectcalico.docs.tigera.io/manifests/calico.yaml
+sed -i -r -e 's/^(\s*)#\s*(- name: CALICO_IPV4POOL_CIDR)\s*$/\1\2\n\1  value: "10.244.0.0\/16"/g' calico.yaml
+kubectl apply -f calico.yaml
+```
+- Кластер работает, с помощью команды `kubectl apply -f manifest.yaml` задеплоены поды приложений `comment`, `mongo`, `post`, `ui`;
+
+#### Задание со ⭐. Установка кластера k8s с помощью terraform и ansible
+- В папке `kubernetes/terraform` подготовлена конфигурация Terraform для развертывания произвольного количества инстансов master и worker нод кластера Kubernetes;
+- В папке `kubernetes/ansible` подготовлена конфигурация Ansible для развертывания кластера k8s с автоматическим назначением нодам master и worker ролей;
+- Для предварительной конфигурации хостов написаны (скопипащены) таски отключения свопа, конфигурации параметров `sysctl` для k8s, загрузки модуля ядра `br_netfilter`, настройки `iptables`;
+- В плейбуке используются роли Ansible `geerlingguy.containerd` и `geerlingguy.kubernetes`, установленные из Ansible-galaxy;
+- Для сети настраивается плагин `Calico`;
+- После отработки команды `ansible-playbook -i inventory.yml playbooks/k8s.yml` кластер успешно поднимается;
+```
+$ ssh ubuntu@51.250.70.117 sudo kubectl get nodes
+NAME           STATUS   ROLES           AGE     VERSION
+k8s-master-0   Ready    control-plane   3m26s   v1.28.2
+k8s-worker-1   Ready    <none>          3m4s    v1.28.2
+
+$ ssh ubuntu@51.250.70.117 sudo kubectl get pods --all-namespaces -o wide
+NAMESPACE     NAME                                       READY   STATUS    RESTARTS   AGE     IP            NODE           NOMINATED NODE   READINESS GATES
+kube-system   calico-kube-controllers-7ddc4f45bc-rtpm5   1/1     Running   0          3m21s   10.244.72.3   k8s-master-0   <none>           <none>
+kube-system   calico-node-4h49c                          1/1     Running   0          3m16s   10.128.0.10   k8s-worker-1   <none>           <none>
+kube-system   calico-node-6b9kp                          1/1     Running   0          3m21s   10.128.0.32   k8s-master-0   <none>           <none>
+kube-system   coredns-5dd5756b68-692q4                   1/1     Running   0          3m21s   10.244.72.1   k8s-master-0   <none>           <none>
+kube-system   coredns-5dd5756b68-lbs9n                   1/1     Running   0          3m21s   10.244.72.2   k8s-master-0   <none>           <none>
+kube-system   etcd-k8s-master-0                          1/1     Running   0          3m34s   10.128.0.32   k8s-master-0   <none>           <none>
+kube-system   kube-apiserver-k8s-master-0                1/1     Running   0          3m34s   10.128.0.32   k8s-master-0   <none>           <none>
+kube-system   kube-controller-manager-k8s-master-0       1/1     Running   0          3m36s   10.128.0.32   k8s-master-0   <none>           <none>
+kube-system   kube-proxy-2pbdg                           1/1     Running   0          3m21s   10.128.0.32   k8s-master-0   <none>           <none>
+kube-system   kube-proxy-hd7dd                           1/1     Running   0          3m16s   10.128.0.10   k8s-worker-1   <none>           <none>
+```
+- Задеплоены поды приложений `comment`, `mongo`, `post`, `ui`, все работает.
+
+```
+# kubectl get pods -o wide
+NAME                                  READY   STATUS    RESTARTS   AGE     IP             NODE           NOMINATED NODE   READINESS GATES
+comment-deployment-687bccf5fd-hzs5h   1/1     Running   0          2m17s   10.244.230.2   k8s-worker-1   <none>           <none>
+mongo-deployment-79d69f4666-l6pnm     1/1     Running   0          2m43s   10.244.230.1   k8s-worker-1   <none>           <none>
+post-deployment-68db465f9c-84dwr      1/1     Running   0          2m12s   10.244.230.3   k8s-worker-1   <none>           <none>
+ui-deployment-7d84b9f894-8k4dk        1/1     Running   0          2m8s    10.244.230.4   k8s-worker-1   <none>           <none>
+```
+
 ## ДЗ #18. Применение системы логирования в инфраструктуре на основе Docker
 
 Выполнены все основные и дополнительные пункты ДЗ.
