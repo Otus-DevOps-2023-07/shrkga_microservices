@@ -1,6 +1,67 @@
 # Репозиторий shrkga_microservices
 Описание выполненных домашних заданий.
 
+## ДЗ #20. Основные модели безопасности и контроллеры в Kubernetes
+
+Выполнены все основные и дополнительные пункты ДЗ.
+
+#### Запуск кластера и приложения. Модель безопасности
+- Используется хостовая машина под управлением Ubuntu 22.04.3;
+- Установлена утилита `kubectl`;
+- Установлены утилиты `minikube`;
+- Успешно запущен Minikube-кластер;
+- Изучены формат и содержимое файла `~/.kube/config`;
+- Созданы манифесты сущностей приложения Reddit в каталоге [`kubernetes/reddit`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/blob/kubernetes-2/kubernetes/reddit);
+- Компоненты успешно запущены в `minicube`;
+```
+$ kubectl apply -f ./kubernetes/reddit/
+```
+- Для связи `ui` с `post` и `comment` созданы объекты типа `Service`;
+- Для связи `post` и `comment` с `mongodb` посредством имен `post-db` и `comment-db`, созданы сервисы с соответствующими именами;
+- В манифестах деплойментов `post` и `comment` заданы переменные окружения (хост и название БД) для подключения к MongoDB;
+- Создан Service для UI-компонента для обеспечения доступа к веб-интерфейсу извне;
+- Подключен аддон Minikube `dashboard`;
+```
+minikube addons enable dashboard
+minikube dashboard --url
+```
+- Dashboard успешно открылся http://127.0.0.1:43723/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
+- Изучен функционал Namespaces;
+- Создано окружение `dev`, в нём запущено наше приложение;
+- Информация об окружении добавлена внутрь контейнера UI;
+
+#### Yandex Cloud Managed Service for Kubernetes
+- Создан Kubernetes кластер под названием `test-cluster` через веб-интерфейс консоли Yandex Cloud;
+- Создана группа из двух узлов, входящих в кластер;
+- Выполнено подключение к кластеру;
+```
+yc managed-kubernetes cluster get-credentials test-cluster --external
+```
+- В `test-cluster` создано `dev` namespace, куда задеплоены все компоненты приложения `reddit`;
+- Приложение успешно открывается по адресу одной из нод в `test-cluster`;
+
+> [>>> Скриншоты здесь <<<](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/blob/kubernetes-2/kubernetes/screenshots)
+
+#### Задание со ⭐. Развертывание Kubernetes-кластера в Yandex Cloud с помощью Terraform модуля
+- В каталоге [`kubernetes/terraform-k8s`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/blob/kubernetes-2/kubernetes/terraform-k8s) подготовлена конфигурация Terraform для развертывания Kubernetes кластера с использованием ресурсов `yandex_kubernetes_cluster` и `yandex_kubernetes_node_group`;
+
+#### Задание со ⭐. Создание YAML-манифестов для описания созданных сущностей для включения dashboard
+- Dashboard UI отсутствует по умолчанию, выполнено его развертывание;
+```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+```
+- В каталоге [`kubernetes/dashboard`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/blob/kubernetes-2/kubernetes/dashboard) подготовлены манифесты для сущностей `ServiceAccount` и `ClusterRoleBinding` для доступа к Dashboard UI;
+```
+kubectl apply -f ./kubernetes/dashboard/
+```
+- Получен `Bearer Token` для `ServiceAccount`;
+```
+kubectl -n kubernetes-dashboard create token admin-user
+```
+- Запущен `kubectl proxy`;
+- Dashboard UI открывается через URL http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+> [Скриншот Dashboard UI](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/raw/kubernetes-2/kubernetes/screenshots/chrome_wHpxVZf0L9.png?raw=true)
+
 ## ДЗ #19. Введение в Kubernetes
 
 Выполнены все основные и дополнительные пункты ДЗ.
