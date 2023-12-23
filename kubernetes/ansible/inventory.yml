@@ -8,7 +8,7 @@ all:
   children:
     masters:
       hosts:
-        51.250.70.117:
+        158.160.124.233:
       vars:
         kubernetes_role: control_plane
         kubernetes_apiserver_advertise_address: 0.0.0.0
@@ -18,6 +18,6 @@ all:
           cidr: 10.244.0.0/16
     workers:
       hosts:
-        84.201.134.106:
+        51.250.87.5:
       vars:
         kubernetes_role: node
