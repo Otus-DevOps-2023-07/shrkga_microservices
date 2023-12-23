@@ -25,8 +25,8 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 - Создан объект `NetworkPolicy` для компонента `mongo`;
 - Доступ к подам с MongoDB разрешен от подов с label'ами `comment` и `post`;
 - Изучен функционал `PersitentVolume` для хранения данных MongoDB;
-- В Yandex Cloud создан диск;
-- Создан манифест типа `PersitentVolume` для ресурса дискового в Yandex Cloud;
+- В Yandex Cloud создан дисковый ресурс;
+- Создан манифест типа `PersitentVolume` для дискового ресурса в Yandex Cloud;
 - Создан манифест типа `PersistentVolumeClaim` для запроса на выдачу места из `PersitentVolume`;
 - Выделенный диск примонтирован к поду mongo;
 - Протестировано создание поста с последующим удалением и созданием деплоя mongo. Пост остался на месте.
