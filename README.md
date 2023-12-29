@@ -16,10 +16,14 @@
 - Установлено несколько релизов ui;
 - С помощью механизма управления зависимостями создан единый Chart `reddit`, который объединяет все компоненты;
 - После выполнения `helm dep update` появился файл `requirements.lock` с фиксацией зависимостей, и создалась директория `charts` с зависимостями в виде архивов;
-
 - В Yandex Cloud поднят k8s-кластер;
 - Поднят Network LoadBalancer со статическим IP;
 - Подготовлены доменные имена для GitLab в зоне `otus.kga.spb.ru` для корректного выпуска Let's Encrypt сертификатов и работы по `https`;
+- Установлен `ingress-nginx`;
+```
+helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --namespace ingress-nginx --create-namespace
+```
+
 - Установлен GitLab с помощью Helm Chart'а;
 
 ```
