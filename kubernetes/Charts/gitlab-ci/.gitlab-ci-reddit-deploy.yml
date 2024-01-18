@@ -1,0 +1,93 @@
+stages:
+  - test
+  - staging
+  - production
+
+.extended_deploy:
+  image: dtzar/helm-kubectl:3.13
+  variables:
+    GIT_STRATEGY: fetch
+    KUBE_CONTEXT: ${CI_PROJECT_PATH}:yc-k8s
+    name: ${CI_ENVIRONMENT_SLUG}
+    envname: review/${CI_PROJECT_PATH}/${CI_COMMIT_REF_NAME}
+    host: ${name}.${CI_PAGES_DOMAIN}
+    reg: ${CI_REGISTRY}/shrkga
+    repo: https://${CI_SERVER_HOST}/shrkga
+  before_script:
+    # installing dependencies
+    - apk add -U openssl curl tar gzip bash ca-certificates git
+    - wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+    - curl -fsSL https://storage.googleapis.com/pub/gsutil.tar.gz | tar -xz -C ${HOME}
+    - export PATH=${PATH}:${HOME}/gsutil
+    - curl -fsSL https://raw.githubusercontent.com/kubernetes/helm/master/scripts/sync-repo.sh -o /usr/bin/sync-repo.sh
+    - chmod a+x /usr/bin/sync-repo.sh
+    # ensuring namespace
+    - kubectl config get-contexts
+    - kubectl config use-context ${KUBE_CONTEXT}
+    - kubectl describe namespace "${KUBE_NAMESPACE}" || kubectl create namespace "${KUBE_NAMESPACE}"
+    - >
+      function deploy() {
+        mkdir -p reddit/chats
+        helm dep build reddit
+        echo "Deploy helm release $name to $KUBE_NAMESPACE"
+
+        for HCMD in 'helm template' 'helm upgrade --install --wait --atomic'
+        do
+          ${HCMD} \
+            --set ui.ingress.host="$host" \
+            --set ui.image.repository=${reg}/ui \
+            --set ui.image.tag="$(curl -fsSL ${repo}/ui/raw/main/VERSION)" \
+            --set post.image.repository=${reg}/post \
+            --set post.image.tag="$(curl -fsSL ${repo}/post/raw/main/VERSION)" \
+            --set comment.image.repository=${reg}/comment \
+            --set comment.image.tag="$(curl -fsSL ${repo}/comment/raw/main/VERSION)" \
+            --namespace="$KUBE_NAMESPACE" --create-namespace \
+            --version="$CI_PIPELINE_ID-$CI_JOB_ID" \
+            "$name" \
+            reddit/
+        done
+      }
+
+test:
+  stage: test
+  script:
+    - env
+    - exit 0
+  only:
+    - triggers
+    - branches
+
+staging:
+  stage: staging
+  variables:
+    KUBE_NAMESPACE: staging
+  extends: .extended_deploy
+  environment:
+    name: staging
+    url: http://${host}
+  script:
+    - export track="${1-stable}"
+    - deploy
+  only:
+    refs:
+      - main
+  except:
+    - triggers
+
+production:
+  stage: production
+  variables:
+    KUBE_NAMESPACE: production
+  extends: .extended_deploy
+  environment:
+    name: production
+    url: http://${host}
+  script:
+    - export track="${1-stable}"
+    - deploy
+  when: manual
+  only:
+    refs:
+      - main
+  except:
+    - triggers

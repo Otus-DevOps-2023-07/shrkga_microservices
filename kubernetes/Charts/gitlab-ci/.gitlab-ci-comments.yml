@@ -1,0 +1,118 @@
+stages:
+  - build
+  - test
+  - review
+  - release
+  - cleanup
+
+.extended_deploy:
+  image: dtzar/helm-kubectl:3.13
+  variables:
+    GIT_STRATEGY: none
+    KUBE_NAMESPACE: review
+    KUBE_CONTEXT: ${CI_PROJECT_PATH}:yc-k8s
+    name: ${CI_ENVIRONMENT_SLUG}
+    envname: review/${CI_PROJECT_PATH}/${CI_COMMIT_REF_NAME}
+    host: ${name}.${CI_PAGES_DOMAIN}
+  before_script:
+    # installing dependencies
+    - apk add -U openssl curl tar gzip bash ca-certificates git
+    - wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+    - curl -fsSL https://storage.googleapis.com/pub/gsutil.tar.gz | tar -xz -C ${HOME}
+    - export PATH=${PATH}:${HOME}/gsutil
+    - curl -fsSL https://raw.githubusercontent.com/kubernetes/helm/master/scripts/sync-repo.sh -o /usr/bin/sync-repo.sh
+    - chmod a+x /usr/bin/sync-repo.sh
+    # ensuring namespace
+    - kubectl config get-contexts
+    - kubectl config use-context ${KUBE_CONTEXT}
+    - kubectl describe namespace "${KUBE_NAMESPACE}" || kubectl create namespace "${KUBE_NAMESPACE}"
+
+build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    # Building
+    - echo "Building and pushing Dockerfile-based application..."
+    - echo `git show --format="%h" HEAD | head -1` > build_info.txt
+    - echo `git rev-parse --abbrev-ref HEAD` >> build_info.txt
+    - /kaniko/executor
+      --cache=true
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}"
+    - echo ""
+  only:
+   - branches
+
+test:
+  stage: test
+  script:
+    - env
+    - exit 0
+  only:
+    - branches
+
+release:
+  stage: release
+  image:
+    name: gcr.io/go-containerregistry/crane:debug
+    entrypoint: [""]
+  variables:
+    DOCKER_REGISTRY: index.docker.io
+    DOCKER_APP_REPO: ${DOCKER_REGISTRY}/${CI_PROJECT_PATH}
+  script:
+    # Releasing
+    - echo "Updating docker images ..."
+    - crane auth login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - crane auth login -u ${DOCKER_REGISTRY_USER} -p ${DOCKER_REGISTRY_PASSWORD} ${DOCKER_REGISTRY}
+    - VTAG=$(cat VERSION)
+    - for CVTAG in ${VTAG} latest; do crane tag ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA} ${CVTAG}; done
+    - crane copy ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA} ${DOCKER_APP_REPO}:${VTAG}
+    - crane tag ${DOCKER_APP_REPO}:${VTAG} latest
+  only:
+    - main
+
+review:
+  stage: review
+  extends: .extended_deploy
+  environment:
+    name: ${envname}
+    url: http://${host}
+    on_stop: stop_review
+  script:
+    - echo "Clone deploy repository..."
+    - git clone https://${CI_SERVER_HOST}/shrkga/reddit-deploy.git
+    - echo "Download helm dependencies..."
+    - helm dep update reddit-deploy/reddit
+    - echo "Deploy helm release ${name} to ${KUBE_NAMESPACE}"
+    - echo "Upgrading existing release..."
+    - >
+      helm upgrade --install \
+        --wait \
+        --atomic \
+        --set ${CI_PROJECT_NAME}.ingress.host="${host}" \
+        --set ${CI_PROJECT_NAME}.image.repository=${CI_REGISTRY_IMAGE} \
+        --set ${CI_PROJECT_NAME}.image.tag=${CI_COMMIT_SHA} \
+        --namespace="${KUBE_NAMESPACE}" \
+        --version="${CI_PIPELINE_ID}-${CI_JOB_ID}" \
+        "${name}" \
+        reddit-deploy/reddit/
+  except:
+    - main
+
+stop_review:
+  stage: cleanup
+  extends: .extended_deploy
+  environment:
+    name: ${envname}
+    action: stop
+  script:
+    - helm delete "${name}" --namespace="${KUBE_NAMESPACE}" || true
+  when: manual
+  allow_failure: true
+  only:
+    - branches
+  except:
+    - main

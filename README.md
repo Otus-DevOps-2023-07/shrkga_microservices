@@ -1,6 +1,223 @@
 # Репозиторий shrkga_microservices
 Описание выполненных домашних заданий.
 
+## ДЗ #22. Интеграция Kubernetes в GitlabCI
+
+Выполнены все основные и дополнительные пункты ДЗ.
+
+#### Основное задание
+
+- Установлен Helm;
+- Tiller deprecated;
+- Выполнена разработка Chart'ов для компоненов `ui`, `post`, `comment` и `mongodb`;
+- Созданы шаблоны манифестов `deployment.yaml`, `ingress.yaml`, `service.yaml`;
+- Определены переменные в `values.yml`;
+- Создан хелпер в `_helpers.tpl`;
+- Установлено несколько релизов ui;
+- С помощью механизма управления зависимостями создан единый Chart `reddit`, который объединяет все компоненты;
+- После выполнения `helm dep update` появился файл `requirements.lock` с фиксацией зависимостей, и создалась директория `charts` с зависимостями в виде архивов;
+- В Yandex Cloud поднят k8s-кластер;
+- Поднят Network LoadBalancer со статическим IP;
+- Подготовлены доменные имена для GitLab в зоне `otus.kga.spb.ru` для корректного выпуска Let's Encrypt сертификатов и работы по `https`;
+- Установлен `ingress-nginx`;
+```
+helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --namespace ingress-nginx --create-namespace
+```
+
+- Установлен GitLab с помощью Helm Chart'а;
+
+```
+$ helm repo add gitlab https://charts.gitlab.io/
+$ helm repo update
+$ helm upgrade --install gitlab gitlab/gitlab \
+  --namespace gitlab --create-namespace \
+  --timeout 600s \
+  --set global.hosts.domain=otus.kga.spb.ru \
+  --set global.hosts.https=true \
+  --set global.ingress.configureCertmanager=true \
+  --set certmanager-issuer.email=shr@kga.spb.ru \
+  --set global.kas.enabled=true \
+  --set global.edition=ce \
+  --set global.time_zone=Europe/Moscow \
+  --set postgresql.image.tag=13.6.0
+```
+- Компоненты GitLab успешно поднялись на доменных именах, сертификаты успешно выпустились;
+
+```
+$ kubectl get ingress -n gitlab
+
+NAME                        CLASS          HOSTS                      ADDRESS       PORTS     AGE
+gitlab-minio                gitlab-nginx   minio.otus.kga.spb.ru      10.129.0.12   80, 443   153m
+gitlab-registry             gitlab-nginx   registry.otus.kga.spb.ru   10.129.0.12   80, 443   153m
+gitlab-kas                  gitlab-nginx   kas.otus.kga.spb.ru        10.129.0.12   80, 443   153m
+gitlab-webservice-default   gitlab-nginx   gitlab.otus.kga.spb.ru     10.129.0.12   80, 443   153m
+```
+- В GitLab запушены проекты `comment`, `post`, `reddit-deploy`, `ui`;
+- Настроены GitLab agent'ы для подключения проектов к Kubernetes кластеру;
+- В файле `.gitlab-ci.yml` описан универсальный пайплайн для `comment`, `post`, и `ui`, сборка всех образов выполняется успешно;
+
+> Файлы `.gitlab-ci.yml` см. в каталоге [`kubernetes/Charts/gitlab-ci`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/raw/kubernetes-4/kubernetes/Charts/gitlab-ci)
+
+- Создан новый бранч `feature/3` в репозитории ui;
+- CI настроен на запуск отдельного окружения в Kubernetes по коммиту в feature-бранч (см. [`kubernetes/Charts/gitlab-ci/.gitlab-ci-ui.yml`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/raw/kubernetes-4/kubernetes/Charts/gitlab-ci/.gitlab-ci-ui.yml));
+- По адресу `http://${CI_ENVIRONMENT_SLUG}.${CI_PAGES_DOMAIN}` поднимается сайт для окружения;
+- Полученный файл `.gitlab-ci.yml` для ui скопирован в репозитории для post и comment;
+- Динамическое создание и удаление окружений работает для всех проектов;
+
+```
+$ kubectl get all,cm,secret,ing -n review
+
+NAME                                                   READY   STATUS    RESTARTS   AGE
+pod/review-shrkga-ui-txcrrz-post-7494d56db9-nxc96      1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-ui-5f5f94c99d-fkcxd        1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-post-7494d56db9-kgx9c      1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-ui-5f5f94c99d-4vg9h        1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-post-7494d56db9-kpk7d      1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-ui-5f5f94c99d-6lmj6        1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-mongodb-867db6966d-6wfc7   1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-comment-5bd6445db7-nbqkj   1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-comment-5bd6445db7-hl9hc   1/1     Running   0          5m4s
+pod/review-shrkga-ui-txcrrz-comment-5bd6445db7-xhk9k   1/1     Running   0          5m4s
+
+NAME                                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+service/review-shrkga-ui-txcrrz-comment   ClusterIP   10.43.27.161    <none>        9292/TCP         5m4s
+service/review-shrkga-ui-txcrrz-ui        NodePort    10.43.125.210   <none>        9292:30196/TCP   5m4s
+service/review-shrkga-ui-txcrrz-post      ClusterIP   10.43.155.18    <none>        5000/TCP         5m4s
+service/review-shrkga-ui-txcrrz-mongodb   ClusterIP   10.43.23.32     <none>        27017/TCP        5m4s
+
+NAME                                              READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/review-shrkga-ui-txcrrz-post      3/3     3            3           5m4s
+deployment.apps/review-shrkga-ui-txcrrz-ui        3/3     3            3           5m4s
+deployment.apps/review-shrkga-ui-txcrrz-mongodb   1/1     1            1           5m4s
+deployment.apps/review-shrkga-ui-txcrrz-comment   3/3     3            3           5m4s
+
+NAME                                                         DESIRED   CURRENT   READY   AGE
+replicaset.apps/review-shrkga-ui-txcrrz-post-7494d56db9      3         3         3       5m4s
+replicaset.apps/review-shrkga-ui-txcrrz-ui-5f5f94c99d        3         3         3       5m4s
+replicaset.apps/review-shrkga-ui-txcrrz-mongodb-867db6966d   1         1         1       5m4s
+replicaset.apps/review-shrkga-ui-txcrrz-comment-5bd6445db7   3         3         3       5m4s
+
+NAME                         DATA   AGE
+configmap/kube-root-ca.crt   1      5m9s
+
+NAME                                                   TYPE                 DATA   AGE
+secret/sh.helm.release.v1.review-shrkga-ui-txcrrz.v1   helm.sh/release.v1   1      5m4s
+
+NAME                                                   CLASS    HOSTS                                           ADDRESS       PORTS   AGE
+ingress.networking.k8s.io/review-shrkga-ui-txcrrz-ui   <none>   review-shrkga-ui-txcrrz.pages.otus.kga.spb.ru   10.129.0.12   80      5m4s
+```
+- Для проекта `reddit-deploy` создан [пайплайн деплоя на статичные окружения `staging` и `production`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/raw/kubernetes-4/kubernetes/Charts/gitlab-ci/.gitlab-ci-reddit-deploy.yml);
+
+```
+$ kubectl get all,cm,secret,ing -n staging
+
+NAME                                   READY   STATUS    RESTARTS   AGE
+pod/staging-post-76cb7c96fc-cz4d5      1/1     Running   0          3m27s
+pod/staging-post-76cb7c96fc-crkqv      1/1     Running   0          3m27s
+pod/staging-post-76cb7c96fc-kx9x6      1/1     Running   0          3m27s
+pod/staging-mongodb-6f946974ff-475br   1/1     Running   0          3m27s
+pod/staging-comment-5f8bf85f78-qvd5n   1/1     Running   0          3m27s
+pod/staging-comment-5f8bf85f78-qn775   1/1     Running   0          3m27s
+pod/staging-comment-5f8bf85f78-2xgst   1/1     Running   0          3m27s
+pod/staging-ui-6c875b7cc9-djk64        1/1     Running   0          3m27s
+pod/staging-ui-6c875b7cc9-gm2tg        1/1     Running   0          3m27s
+pod/staging-ui-6c875b7cc9-d48gm        1/1     Running   0          3m27s
+
+NAME                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+service/staging-ui        NodePort    10.43.144.235   <none>        9292:31363/TCP   3m28s
+service/staging-comment   ClusterIP   10.43.115.57    <none>        9292/TCP         3m28s
+service/staging-post      ClusterIP   10.43.185.101   <none>        5000/TCP         3m28s
+service/staging-mongodb   ClusterIP   10.43.118.121   <none>        27017/TCP        3m28s
+
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/staging-post      3/3     3            3           3m28s
+deployment.apps/staging-mongodb   1/1     1            1           3m28s
+deployment.apps/staging-comment   3/3     3            3           3m28s
+deployment.apps/staging-ui        3/3     3            3           3m28s
+
+NAME                                         DESIRED   CURRENT   READY   AGE
+replicaset.apps/staging-post-76cb7c96fc      3         3         3       3m28s
+replicaset.apps/staging-mongodb-6f946974ff   1         1         1       3m28s
+replicaset.apps/staging-comment-5f8bf85f78   3         3         3       3m28s
+replicaset.apps/staging-ui-6c875b7cc9        3         3         3       3m28s
+
+NAME                         DATA   AGE
+configmap/kube-root-ca.crt   1      36m
+
+NAME                                   TYPE                 DATA   AGE
+secret/sh.helm.release.v1.staging.v1   helm.sh/release.v1   1      3m29s
+
+NAME                                   CLASS    HOSTS                           ADDRESS       PORTS   AGE
+ingress.networking.k8s.io/staging-ui   <none>   staging.pages.otus.kga.spb.ru   10.129.0.12   80      3m28s
+```
+
+```
+$ kubectl get all,cm,secret,ing -n production
+
+NAME                                     READY   STATUS    RESTARTS        AGE
+pod/production-comment-fd586fdbd-htpxt   1/1     Running   1 (2m23s ago)   9m39s
+pod/production-comment-fd586fdbd-7ljxh   1/1     Running   1 (2m23s ago)   9m39s
+pod/production-comment-fd586fdbd-mlfdw   1/1     Running   1 (2m23s ago)   9m39s
+pod/production-post-76c7757fcc-9cw5w     1/1     Running   1 (2m23s ago)   9m39s
+pod/production-mongodb-56c75875f-dg5t8   1/1     Running   1 (2m23s ago)   9m39s
+pod/production-post-76c7757fcc-2w7pr     1/1     Running   1 (2m23s ago)   9m39s
+pod/production-ui-7d9c875547-8vtr2       1/1     Running   1 (2m23s ago)   9m39s
+pod/production-ui-7d9c875547-dx5zb       1/1     Running   1 (2m23s ago)   9m39s
+pod/production-post-76c7757fcc-z5xbq     1/1     Running   1 (2m23s ago)   9m39s
+pod/production-ui-7d9c875547-fs6r7       1/1     Running   1 (2m23s ago)   9m39s
+
+NAME                         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+service/production-mongodb   ClusterIP   10.43.74.80     <none>        27017/TCP        9m41s
+service/production-ui        NodePort    10.43.249.109   <none>        9292:30660/TCP   9m41s
+service/production-comment   ClusterIP   10.43.212.202   <none>        9292/TCP         9m41s
+service/production-post      ClusterIP   10.43.126.250   <none>        5000/TCP         9m41s
+
+NAME                                 READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/production-comment   3/3     3            3           9m40s
+deployment.apps/production-mongodb   1/1     1            1           9m40s
+deployment.apps/production-post      3/3     3            3           9m40s
+deployment.apps/production-ui        3/3     3            3           9m40s
+
+NAME                                           DESIRED   CURRENT   READY   AGE
+replicaset.apps/production-comment-fd586fdbd   3         3         3       9m40s
+replicaset.apps/production-mongodb-56c75875f   1         1         1       9m40s
+replicaset.apps/production-post-76c7757fcc     3         3         3       9m40s
+replicaset.apps/production-ui-7d9c875547       3         3         3       9m40s
+
+NAME                         DATA   AGE
+configmap/kube-root-ca.crt   1      14m
+
+NAME                                      TYPE                 DATA   AGE
+secret/sh.helm.release.v1.production.v1   helm.sh/release.v1   1      9m41s
+
+NAME                                      CLASS    HOSTS                              ADDRESS       PORTS   AGE
+ingress.networking.k8s.io/production-ui   <none>   production.pages.otus.kga.spb.ru   10.129.0.12   80      9m41s
+```
+- Пара скриншотов:
+
+![Staging](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/raw/kubernetes-4/kubernetes/Charts/img/staging.png?raw=true)
+
+![Production](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/raw/kubernetes-4/kubernetes/Charts/img/production.png?raw=true)
+
+- В Helm все отображается;
+
+```
+$ helm ls -A
+
+NAME                    NAMESPACE               REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
+gitlab                  gitlab                  1               2023-12-29 15:55:56.81478231 +0300 MSK  deployed        gitlab-7.7.0            v16.7.0
+ingress-nginx           ingress-nginx           1               2023-12-29 16:07:55.653597855 +0300 MSK deployed        ingress-nginx-4.9.0     1.9.5
+production              production              1               2023-12-29 13:35:06.490380475 +0000 UTC deployed        reddit-1.0.0            1.0.0
+review-shrkga-ui-txcrrz review                  1               2023-12-29 13:22:51.424355148 +0000 UTC deployed        reddit-1.0.0            1.0.0
+staging                 staging                 1               2023-12-29 13:32:25.09763974 +0000 UTC  deployed        reddit-1.0.0            1.0.0
+yc-k8s                  gitlab-agent-yc-k8s     4               2023-12-29 16:31:06.973599126 +0300 MSK deployed        gitlab-agent-1.22.0     v16.7.0
+```
+
+- Все пайплайны написаны без использования `auto_devops`;
+
+#### Задание со ⭐. Свяжите пайплайны сборки образов и пайплайн деплоя на staging и production
+> Итоговый пайплайн здесь: [`kubernetes/Charts/gitlab-ci/.gitlab-ci-star.yml`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/raw/kubernetes-4/kubernetes/Charts/gitlab-ci/.gitlab-ci-star.yml)
+
 ## ДЗ #21. Ingress-контроллеры и сервисы в Kubernetes
 
 Выполнены все основные и дополнительные пункты ДЗ.
