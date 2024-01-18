@@ -1,6 +1,36 @@
 # Репозиторий shrkga_microservices
 Описание выполненных домашних заданий.
 
+## ДЗ #21. Ingress-контроллеры и сервисы в Kubernetes
+
+Выполнены все основные и дополнительные пункты ДЗ.
+
+#### Основное задание
+- Изучено поведение плагина `kube-dns` при удалении подов `kube-dns-autoscaler` и `coredns`;
+- Создан `LoadBalancer` для сервиса `UI`, доступ к приложению успешно заработал по `http`;
+- Запущен `Ingress Controller` на базе балансировщика `Nginx` (версия из ДЗ не заработала, использовалась версия `v1.8.2`);
+```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
+```
+- Создан `Single Service Ingress` для сервиса `UI`, доступ к приложению успешно заработал по `http`;
+- Старый балансировщик `LoadBalancer` удален;
+- Создан TLS сертификат, на его основе создан `Secret`;
+- Ingress настроен на прием только HTTPS трафика;
+- Доступ к приложению успешно заработал по `https`;
+
+#### Задание со ⭐. Опишите создаваемый объект Secret в виде Kubernetes-манифеста
+- Secret описан в файле [`kubernetes/reddit/ui-secret.yml`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/blob/kubernetes-3/kubernetes/reddit/ui-secret.yml);
+
+#### Основное задание (продолжение)
+- Создан объект `NetworkPolicy` для компонента `mongo`;
+- Доступ к подам с MongoDB разрешен от подов с label'ами `comment` и `post`;
+- Изучен функционал `PersitentVolume` для хранения данных MongoDB;
+- В Yandex Cloud создан дисковый ресурс;
+- Создан манифест типа `PersitentVolume` для дискового ресурса в Yandex Cloud;
+- Создан манифест типа `PersistentVolumeClaim` для запроса на выдачу места из `PersitentVolume`;
+- Выделенный диск примонтирован к поду mongo;
+- Протестировано создание поста с последующим удалением и созданием деплоя mongo. Пост остался на месте.
+
 ## ДЗ #20. Основные модели безопасности и контроллеры в Kubernetes
 
 Выполнены все основные и дополнительные пункты ДЗ.
