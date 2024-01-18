@@ -218,7 +218,6 @@ yc-k8s                  gitlab-agent-yc-k8s     4               2023-12-29 16:31
 #### Задание со ⭐. Свяжите пайплайны сборки образов и пайплайн деплоя на staging и production
 > Итоговый пайплайн здесь: [`kubernetes/Charts/gitlab-ci/.gitlab-ci-star.yml`](https://github.com/Otus-DevOps-2023-07/shrkga_microservices/raw/kubernetes-4/kubernetes/Charts/gitlab-ci/.gitlab-ci-star.yml)
 
-
 ## ДЗ #21. Ingress-контроллеры и сервисы в Kubernetes
 
 Выполнены все основные и дополнительные пункты ДЗ.
